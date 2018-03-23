@@ -152,6 +152,7 @@ namespace camgen {
         static clock_t start = clock();
 
         Container container = getKeyValueDataStore().get(opendlv::data::environment::EgoState::ID());
+  if (container.getSenderStamp() == getIdentifier()) {
         m_egoState = container.getData<opendlv::data::environment::EgoState>();
 
         m_image = m_grabber->getNextImage();
@@ -183,6 +184,7 @@ namespace camgen {
         }
 
         m_grabber->delay();
+  }
     }
 
     void CamGen::processMouseMotion(int32_t x, int32_t y) {

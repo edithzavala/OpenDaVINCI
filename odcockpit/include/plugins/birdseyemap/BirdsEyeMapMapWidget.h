@@ -143,11 +143,12 @@ class SelectableNodeDescriptor;
                     opendlv::data::environment::Point3 m_centerOfMapUser;
                     opendlv::data::environment::Point3 m_mouseOld;
 
-                    uint32_t m_numberOfReceivedEgoStates;
-                    opendlv::data::environment::EgoState m_egoState;
-                    opendlv::data::environment::EgoState m_lastEgoState;
-                    opendlv::scenegraph::models::SimpleCar *m_egoCar;
-                    opendlv::scenegraph::SceneNode *m_egoCarTrace;
+    //vehicle 1
+    std::map<uint32_t, uint32_t> m_numberOfReceivedEgoStates;
+    std::map<uint32_t, opendlv::data::environment::EgoState> m_egoState;
+    std::map<uint32_t, opendlv::data::environment::EgoState> m_lastEgoState;
+    std::map<uint32_t, opendlv::scenegraph::models::SimpleCar*> m_egoCar;
+    std::map<uint32_t, opendlv::scenegraph::SceneNode*> m_egoCarTrace;
 
                     opendlv::scenegraph::SceneNode *m_obstaclesRoot;
                     map<uint32_t, opendlv::scenegraph::SceneNode*> m_mapOfObstacles;

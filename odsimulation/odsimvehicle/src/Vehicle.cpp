@@ -63,6 +63,7 @@ namespace vehicle {
         while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
             // Get current VehicleControl.
             Container c = kvs.get(automotive::VehicleControl::ID());
+    if (c.getSenderStamp() == getIdentifier()) {
             automotive::VehicleControl vc = c.getData<automotive::VehicleControl>();
 
             TimeStamp currentTime;
@@ -80,6 +81,7 @@ namespace vehicle {
             }
 
             previousTime = currentTime;
+    }
         }
 
         simplifiedBicycleModel.tearDown();

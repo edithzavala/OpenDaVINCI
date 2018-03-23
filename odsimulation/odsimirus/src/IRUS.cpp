@@ -59,7 +59,9 @@ namespace irus {
 
         while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
             // Get current EgoState.
-            Container c = kvs.get(opendlv::data::environment::EgoState::ID());
+    Container c = kvs.get(opendlv::data::environment::EgoState::ID());
+    if (c.getSenderStamp() == getIdentifier()) {
+
             EgoState es = c.getData<EgoState>();
 
             // Calculate result and propagate it.
@@ -72,6 +74,7 @@ namespace irus {
                     Thread::usleepFor(50);
                 }
             }
+    }
         }
 
         irus.tearDown();
