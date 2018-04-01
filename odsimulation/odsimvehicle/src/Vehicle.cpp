@@ -21,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "opendavinci/odcore/base/Thread.h"
 #include "opendavinci/odcore/data/Container.h"
@@ -62,26 +63,33 @@ namespace vehicle {
 
         while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
             // Get current VehicleControl.
-            Container c = kvs.get(automotive::VehicleControl::ID());
+    Container c = kvs.get(automotive::VehicleControl::ID());
+    automotive::VehicleControl vc;
     if (c.getSenderStamp() == getIdentifier()) {
-            automotive::VehicleControl vc = c.getData<automotive::VehicleControl>();
-
-            TimeStamp currentTime;
-            const double timeStep = (currentTime.toMicroseconds() - previousTime.toMicroseconds()) / (1000.0 * 1000.0);
-
-            // Calculate result and propagate it.
-            vector<Container> toBeSent = simplifiedBicycleModel.calculate(vc, timeStep);
-            if (toBeSent.size() > 0) {
-                vector<Container>::iterator it = toBeSent.begin();
-                while(it != toBeSent.end()) {
-                    getConference().send(*it);
-                    it++;
-                    Thread::usleepFor(50);
-                }
-            }
-
-            previousTime = currentTime;
+      vc = c.getData<automotive::VehicleControl>();
     }
+    std::cout << "Vehicle control id: " << c.getSenderStamp() << std::endl;
+
+    std::cout << "Vehicle data " << std::to_string(vc.getAcceleration())
+            << std::endl;
+
+    TimeStamp currentTime;
+    const double timeStep = (currentTime.toMicroseconds()
+            - previousTime.toMicroseconds()) / (1000.0 * 1000.0);
+
+    // Calculate result and propagate it.
+    vector<Container> toBeSent = simplifiedBicycleModel.calculate(vc, timeStep);
+    if (toBeSent.size() > 0) {
+      vector<Container>::iterator it = toBeSent.begin();
+      while (it != toBeSent.end()) {
+        it->setSenderStamp(getIdentifier());
+        getConference().send(*it);
+        it++;
+        Thread::usleepFor(50);
+      }
+    }
+
+    previousTime = currentTime;
         }
 
         simplifiedBicycleModel.tearDown();

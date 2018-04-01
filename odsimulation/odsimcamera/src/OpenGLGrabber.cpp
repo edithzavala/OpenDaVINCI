@@ -86,8 +86,12 @@ namespace camgen {
                 m_root->addChild(new XYZAxes(NodeDescriptor("XYZAxes")));
                 m_root->addChild(new Grid(NodeDescriptor("Grid"), 10, 2));
             }
+    std::string name("odsimcamera" + m_kvc.getValue<string>("odsimcamera.id"));
 
-            m_sharedMemory = odcore::wrapper::SharedMemoryFactory::createSharedMemory("odsimcamera", 640 * 480 * 3);
+    std::cout << name << std::endl;
+
+    m_sharedMemory = odcore::wrapper::SharedMemoryFactory::createSharedMemory(
+            name, 640 * 480 * 3);
 
             m_image = std::shared_ptr<core::wrapper::Image>(core::wrapper::ImageFactory::getInstance().getImage(640, 480, core::wrapper::Image::BGR_24BIT, static_cast<char*>(m_sharedMemory->getSharedMemory())));
 

@@ -19,6 +19,7 @@
 
 #include <sstream>
 #include <string>
+#include <iostream>
 
 #include "IRUS.h"
 #include "opendavinci/odcore/opendavinci.h"
@@ -51,6 +52,7 @@ namespace irus {
 
         // Use libodsimulation's odsimirus implementation.
         string config = sstrConfiguration.str();
+  std::cout << config << std::endl;
         opendlv::vehiclecontext::model::IRUS irus(config);
         irus.setup();
 
@@ -60,6 +62,8 @@ namespace irus {
         while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
             // Get current EgoState.
     Container c = kvs.get(opendlv::data::environment::EgoState::ID());
+    std::cout << "Vehicle egostate id: " << c.getSenderStamp() << std::endl;
+
     if (c.getSenderStamp() == getIdentifier()) {
 
             EgoState es = c.getData<EgoState>();
@@ -69,7 +73,38 @@ namespace irus {
             if (toBeSent.size() > 0) {
                 vector<Container>::iterator it = toBeSent.begin();
                 while(it != toBeSent.end()) {
-                    getConference().send(*it);
+          it->setSenderStamp(getIdentifier());
+
+          if (it->getDataType()
+                  == automotive::miniature::SensorBoardData::ID()) {
+
+            automotive::miniature::SensorBoardData sbd = it->getData<
+                    automotive::miniature::SensorBoardData>();
+
+            int numSensors = getKeyValueConfiguration().getValue<double>(
+                    "odsimirus.numberOfSensors");
+            for (int i = 0; i < numSensors; i++) {
+              double faultModelSkip = 0;
+            try {
+              stringstream faultModelSkipStr;
+              faultModelSkipStr << "odsimirus.sensor" << i << ".faultModel.skip";
+              faultModelSkip = getKeyValueConfiguration().getValue<double>(faultModelSkipStr.str());
+                      if (faultModelSkip > 0) {
+                        sbd.putTo_MapOfDistances(i, -2);
+                }
+//                        else {
+//                        sbd.putTo_MapOfDistances(i,sbd.getValueForKey_MapOfDistances(i));
+//              }
+              } catch (const odcore::exceptions::ValueForKeyNotFoundException &e) {
+              }
+//              std::cout << sbd.getValueForKey_MapOfDistances(i) << std::endl;
+          }
+
+            Container data = Container(sbd);
+            getConference().send(data);
+          } else {
+            getConference().send(*it);
+          }
                     it++;
                     Thread::usleepFor(50);
                 }

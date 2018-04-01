@@ -54,10 +54,13 @@ LaneFollower::~LaneFollower() {
 
 void LaneFollower::setUp() {
   // This method will be call automatically _before_ running body().
+  char name[3] = { 'w', getKeyValueConfiguration().getValue<char>(
+          "lanefollower.camera_id"), '\0' };
+
   if (m_debug) {
     // Create an OpenCV-window.
-    cvNamedWindow("WindowShowImage", CV_WINDOW_AUTOSIZE);
-    cvMoveWindow("WindowShowImage", 300, 100);
+    cvNamedWindow(name, CV_WINDOW_AUTOSIZE);
+    cvMoveWindow(name, 300, 100);
   }
 }
 
@@ -68,7 +71,9 @@ void LaneFollower::tearDown() {
   }
 
   if (m_debug) {
-    cvDestroyWindow("WindowShowImage");
+    char name[3] = { 'w', getKeyValueConfiguration().getValue<char>(
+            "lanefollower.camera_id"), '\0' };
+    cvDestroyWindow(name);
   }
 }
 
@@ -204,7 +209,9 @@ void LaneFollower::processImage() {
   // Show resulting features.
   if (m_debug) {
     if (m_image != NULL) {
-      cvShowImage("WindowShowImage", m_image);
+      char name[3] = { 'w', getKeyValueConfiguration().getValue<char>(
+              "lanefollower.camera_id"), '\0' };
+      cvShowImage(name, m_image);
       cvWaitKey(10);
     }
   }

@@ -104,17 +104,17 @@ namespace cockpit {
                 createSceneGraph();
 
   //vehicle list
+  m_numberOfReceivedEgoStates[0] = 0;
   m_numberOfReceivedEgoStates[1] = 0;
-  m_numberOfReceivedEgoStates[2] = 0;
+//  m_egoState[0] = NULL;
 //  m_egoState[1] = NULL;
-//  m_egoState[2] = NULL;
+//  m_lastEgoState[0] = NULL;
 //  m_lastEgoState[1] = NULL;
-//  m_lastEgoState[2] = NULL;
 
+//  m_egoCar[0] = NULL;
 //  m_egoCar[1] = NULL;
-//  m_egoCar[2] = NULL;
+//  m_egoCarTrace[0] = NULL;
 //  m_egoCarTrace[1] = NULL;
-//  m_egoCarTrace[2] = NULL;
 
                 // Setup selectable scene graph.
                 m_selectableNodeDescriptorTree = new TreeNode<SelectableNodeDescriptor>();
@@ -205,30 +205,31 @@ namespace cockpit {
   opendlv::scenegraph::models::SimpleCar *sc = new SimpleCar(
           egoStateNodeDescriptor, 4, 2, Point3(), 0,
           Point3(1, 0.84, 0), 2);
-  m_egoCar[1] = sc;
-  m_dynamicElements->addChild(m_egoCar[1]);
+  m_egoCar[0] = sc;
+  m_dynamicElements->addChild(m_egoCar[0]);
 
   opendlv::scenegraph::SceneNode *sn = new SceneNode(
           SceneNodeDescriptor("EgoCar (Trace)"));
-  m_egoCarTrace[1] = sn;
-  m_dynamicElements->addChild(m_egoCarTrace[1]);
+  m_egoCarTrace[0] = sn;
+  m_dynamicElements->addChild(m_egoCarTrace[0]);
 
-//  SceneNodeDescriptor egoStateNodeDescriptor("EgoCar2");
+  SceneNodeDescriptor egoStateNodeDescriptor2("EgoCar2");
   opendlv::scenegraph::models::SimpleCar *sc2 = new SimpleCar(
-          egoStateNodeDescriptor, 4, 2, Point3(), 0, Point3(1, 0.84, 0), 2);
-  m_egoCar[2] = sc2;
-  m_dynamicElements->addChild(m_egoCar[2]);
+          egoStateNodeDescriptor2, 4, 2, Point3(), 0, Point3(1, 0.84, 0), 2);
+  m_egoCar[1] = sc2;
+  m_dynamicElements->addChild(m_egoCar[1]);
 
   opendlv::scenegraph::SceneNode *sn2 = new SceneNode(
           SceneNodeDescriptor("EgoCar2 (Trace)"));
-  m_egoCarTrace[2] = sn2;
-  m_dynamicElements->addChild(m_egoCarTrace[2]);
+  m_egoCarTrace[1] = sn2;
+  m_dynamicElements->addChild(m_egoCarTrace[1]);
 
                 m_plannedRoute = new SceneNode(SceneNodeDescriptor("Planned Route"));
                 m_dynamicElements->addChild(m_plannedRoute);
 
                 // EgoCar is assignable.
                 m_listOfCameraAssignableNodes.push_back(egoStateNodeDescriptor);
+  m_listOfCameraAssignableNodes.push_back(egoStateNodeDescriptor2);
 
                 ///////////////////////////////////////////////////////////////
 
@@ -316,8 +317,8 @@ namespace cockpit {
                 // Center to where we are (either EgoCar or where the user moved the map to).
                 if (m_cameraAssignedNodeDescriptor.getName() == "EgoCar") {
     m_centerOfMap = Point3(
-            m_egoState[1].getPosition().getX() * (-1.0) * m_scaleFactor,
-            m_egoState[1].getPosition().getY() * m_scaleFactor, 0);
+            m_egoState[0].getPosition().getX() * (-1.0) * m_scaleFactor,
+            m_egoState[0].getPosition().getY() * m_scaleFactor, 0);
                 }
 
                 // This applies map translation based on user configuration.
@@ -337,10 +338,10 @@ namespace cockpit {
 
                 {
                     // Update position of ego car and renderer it.
+    m_egoCar[0]->setPosition(m_egoState[0].getPosition(),
+            m_egoState[0].getRotation().getAngleXY());
     m_egoCar[1]->setPosition(m_egoState[1].getPosition(),
             m_egoState[1].getRotation().getAngleXY());
-    m_egoCar[2]->setPosition(m_egoState[2].getPosition(),
-            m_egoState[2].getRotation().getAngleXY());
 
                     // Now, draw everything in the scaled cartesian coordinate frame.
                     painter.setTransform(scaledCartesianCoordinates);
@@ -364,9 +365,9 @@ namespace cockpit {
 
             void BirdsEyeMapMapWidget::resetEgoTrace() {
                 Lock l(m_rootMutex);
-  if (m_egoCarTrace[1] != NULL) {
+  if (m_egoCarTrace[0] != NULL) {
+    m_egoCarTrace[0]->deleteAllChildren();
     m_egoCarTrace[1]->deleteAllChildren();
-    m_egoCarTrace[2]->deleteAllChildren();
                 }
             }
 

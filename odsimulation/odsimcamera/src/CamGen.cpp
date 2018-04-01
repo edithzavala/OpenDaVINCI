@@ -133,7 +133,9 @@ namespace camgen {
         glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE| GLUT_RGB);
         glutInitWindowPosition(50, 50);
         glutInitWindowSize(640, 480);
-        glutCreateWindow("odsimcamera");
+  char name[13] = { 'o', 'd', 's', 'i', 'm', 'c', 'a', 'm', 'e', 'r', 'a',
+  getKeyValueConfiguration().getValue<char>("odsimcamera.id"), '\0' };
+  glutCreateWindow(name);
         glutDisplayFunc(display_func);
         glutIdleFunc(idle_func);
         glutReshapeFunc(resize_func);
@@ -152,6 +154,7 @@ namespace camgen {
         static clock_t start = clock();
 
         Container container = getKeyValueDataStore().get(opendlv::data::environment::EgoState::ID());
+  std::cout << container.getSenderStamp() << std::endl;
   if (container.getSenderStamp() == getIdentifier()) {
         m_egoState = container.getData<opendlv::data::environment::EgoState>();
 
@@ -167,7 +170,13 @@ namespace camgen {
             // TODO: Refactor me!
             si.setBytesPerPixel(3);
             si.setSize(si.getWidth() * si.getHeight() * si.getBytesPerPixel());
-            si.setName("odsimcamera");
+      std::string name(
+              "odsimcamera"
+                      + getKeyValueConfiguration().getValue<string>(
+                              "odsimcamera.id"));
+      si.setName(name);
+
+      std::cout << name << std::endl;
 
             Container c(si);
             getConference().send(c);
