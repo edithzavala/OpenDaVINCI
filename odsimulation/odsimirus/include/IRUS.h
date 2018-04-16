@@ -20,6 +20,8 @@
 #ifndef IRUS_H_
 #define IRUS_H_
 
+#include "MonitorAdaptation.h"
+
 #include "opendavinci/odcore/opendavinci.h"
 #include "opendavinci/odcore/base/module/TimeTriggeredConferenceClientModule.h"
 #include "opendavinci/generated/odcore/data/dmcp/ModuleExitCodeMessage.h"

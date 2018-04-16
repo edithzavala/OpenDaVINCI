@@ -22,6 +22,9 @@
 #include <iostream>
 
 #include "IRUS.h"
+#include "MonitorAdaptation.h"
+#include "V2vRequest.h"
+#include "Voice.h"
 #include "opendavinci/odcore/opendavinci.h"
 #include "opendavinci/odcore/base/Thread.h"
 #include "opendavinci/odcore/data/Container.h"
@@ -52,17 +55,44 @@ namespace irus {
 
         // Use libodsimulation's odsimirus implementation.
         string config = sstrConfiguration.str();
-  std::cout << config << std::endl;
+
         opendlv::vehiclecontext::model::IRUS irus(config);
         irus.setup();
 
         // Use the most recent EgoState available.
         KeyValueDataStore &kvs = getKeyValueDataStore();
 
+  std::cout << config << std::endl;
+  string lastAdaptedMonitor;
+  std::map<string, bool> areSensorAlternatives;
+  areSensorAlternatives["FrontRight"] = false;
+  areSensorAlternatives["Rear"] = false;
+  areSensorAlternatives["RearRight"] = false;
+  areSensorAlternatives["FrontCenter"] = false;
+
+
         while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
             // Get current EgoState.
     Container c = kvs.get(opendlv::data::environment::EgoState::ID());
     std::cout << "Vehicle egostate id: " << c.getSenderStamp() << std::endl;
+
+    Container c2 = kvs.get(MonitorAdaptation::ID());
+    MonitorAdaptation ma = c2.getData<MonitorAdaptation>();
+    if ((unsigned) ma.getVehicleId() == getIdentifier()) {
+      if (lastAdaptedMonitor.compare(ma.getMonitorName()) != 0) {
+        lastAdaptedMonitor = ma.getMonitorName();
+      areSensorAlternatives[lastAdaptedMonitor.substr(
+              lastAdaptedMonitor.find("_") + 1, std::string::npos)] = true;
+        std::string request("request");
+        V2vRequest nextMessage(request.size(), request);
+        odcore::data::Container cReq(nextMessage);
+        getConference().send(cReq);
+//        std::cout << "Adaptation received--------------------------"
+//                << ma.getAction() << " monitor variable:"
+//                << lastAdaptedMonitor.substr(lastAdaptedMonitor.find("_") + 1,
+//                        std::string::npos) << std::endl;
+      }
+    }
 
     if (c.getSenderStamp() == getIdentifier()) {
 
@@ -86,11 +116,35 @@ namespace irus {
             for (int i = 0; i < numSensors; i++) {
               double faultModelSkip = 0;
             try {
-              stringstream faultModelSkipStr;
-              faultModelSkipStr << "odsimirus.sensor" << i << ".faultModel.skip";
+                stringstream faultModelSkipStr;
+                faultModelSkipStr << "odsimirus.sensor" << i
+                        << ".faultModel.skip";
               faultModelSkip = getKeyValueConfiguration().getValue<double>(faultModelSkipStr.str());
                       if (faultModelSkip > 0) {
-                        sbd.putTo_MapOfDistances(i, -2);
+                  string name;
+                  name = getKeyValueConfiguration().getValue<string>(
+                          "odsimirus.sensor" + std::to_string(i) + ".name");
+                if(areSensorAlternatives.at(name.substr(
+                                        name.find("_") + 1, std::string::npos))) {
+                    std::cout
+                            << "There is an alternative for " << name
+                            << "-------------------: "
+                            << lastAdaptedMonitor << std::endl;
+
+                    Container c2Voice = kvs.get(Voice::ID());
+                    std::cout << "Get last data from v2v "
+                            << c2Voice.getDataType() << std::endl;
+//                    std::shared_ptr < Buffer > outBuffer(new Buffer());
+//                    // Reverser for big and little endian specification of V2V.
+//                    outBuffer->Reversed();
+//                    outBuffer->AppendInteger(1); //stationId
+//                    std::vector<unsigned char> bytes = outBuffer->GetBytes();
+//                    std::string bytesString(bytes.begin(), bytes.end());
+
+                    sbd.putTo_MapOfDistances(i, -1);
+                  } else {
+                    sbd.putTo_MapOfDistances(i, -2);
+                  }
                 }
 //                        else {
 //                        sbd.putTo_MapOfDistances(i,sbd.getValueForKey_MapOfDistances(i));

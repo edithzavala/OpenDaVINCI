@@ -68,10 +68,10 @@ namespace vehicle {
     if (c.getSenderStamp() == getIdentifier()) {
       vc = c.getData<automotive::VehicleControl>();
     }
-    std::cout << "Vehicle control id: " << c.getSenderStamp() << std::endl;
-
-    std::cout << "Vehicle data " << std::to_string(vc.getAcceleration())
-            << std::endl;
+//    std::cout << "Vehicle control id: " << c.getSenderStamp() << std::endl;
+//
+//    std::cout << "Vehicle data " << std::to_string(vc.getAcceleration())
+//            << std::endl;
 
     TimeStamp currentTime;
     const double timeStep = (currentTime.toMicroseconds()
