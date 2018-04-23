@@ -1,0 +1,65 @@
+version: '2'
+
+services:
+
+ # microservice odsimvehicle
+    odsimvehicle0:
+        image: odsimvehicle
+        working_dir: /opt/odsimulation
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/odsimulation
+        network_mode: host
+        ipc: host
+        command: "/opt/odsimulation/odsimvehicle --cid=111 --freq=10"
+
+ # microservice odsimvehicle
+    odsimvehicle1:
+        image: odsimvehicle
+        working_dir: /opt/odsimulation
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/odsimulation
+        network_mode: host
+        ipc: host
+        command: "/opt/odsimulation/odsimvehicle --cid=111 --freq=10 --id=1"
+
+ # microservice odsimirus
+    odsimirus0:
+        image: odsimirus
+        working_dir: /opt/odsimulation
+        depends_on:
+            - odsimvehicle0
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/odsimulation
+        network_mode: host
+        ipc: host
+        command: "/opt/odsimulation/odsimirus --cid=111 --freq=10"
+
+ # microservice odsimirus
+    odsimirus1:
+        image: odsimirus
+        working_dir: /opt/odsimulation
+        depends_on:
+            - odsimvehicle1
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/odsimulation
+        network_mode: host
+        ipc: host
+        command: "/opt/odsimulation/odsimirus --cid=111 --freq=10 --id=1"
+
+ # microservice for odcockpit
+    odcockpit:
+        image: odcockpit
+        environment:
+            - DISPLAY=$DISPLAY
+        working_dir: /opt/odsimulation
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/odsimulation
+        network_mode: host
+        ipc: host
+        command: "/opt/odsimulation/odcockpit --cid=111"
+ 

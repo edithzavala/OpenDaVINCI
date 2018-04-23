@@ -69,6 +69,7 @@ namespace automotive {
 	            LaneFollower(const int32_t &argc, char **argv);
 
 	            virtual ~LaneFollower();
+    virtual void nextContainer(odcore::data::Container &c);
 
 	            odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode body();
 
@@ -93,6 +94,7 @@ namespace automotive {
                 double m_eOld;
 
                 automotive::VehicleControl m_vehicleControl;
+    std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
 
 	            virtual void setUp();
 

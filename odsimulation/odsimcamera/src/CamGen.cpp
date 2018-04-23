@@ -95,7 +95,8 @@ namespace camgen {
         m_height(0),
         m_mouseX(0),
         m_mouseY(0),
-        m_mouseButton(0) {
+        m_mouseButton(
+                0), m_KeyValueAdhocDataStore() {
 
         CamGen::m_singleton = this;
 
@@ -149,12 +150,22 @@ namespace camgen {
         glClearColor(0, 0, 0, 0);
     }
 
+void CamGen::nextContainer(Container &c) {
+  if (c.getSenderStamp() == getIdentifier()) {
+    // Store data using a plain map.
+    m_KeyValueAdhocDataStore[c.getDataType()] = c;
+  }
+}
+
     void CamGen::drawScene() {
         static uint32_t frameCounter = 0;
         static clock_t start = clock();
 
-        Container container = getKeyValueDataStore().get(opendlv::data::environment::EgoState::ID());
+  Container container =
+          m_KeyValueAdhocDataStore[opendlv::data::environment::EgoState::ID()];
+
   std::cout << container.getSenderStamp() << std::endl;
+
   if (container.getSenderStamp() == getIdentifier()) {
         m_egoState = container.getData<opendlv::data::environment::EgoState>();
 

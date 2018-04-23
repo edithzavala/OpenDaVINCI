@@ -59,6 +59,7 @@ class OpenGLGrabber;
              */
             CamGen& operator=(const CamGen &/*obj*/);
 
+
         public:
             /**
              * Constructor.
@@ -73,6 +74,8 @@ class OpenGLGrabber;
             virtual void setUp();
 
             virtual void tearDown();
+    virtual void nextContainer(odcore::data::Container &c);
+
 
             odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode body();
 
@@ -140,6 +143,7 @@ class OpenGLGrabber;
             int32_t m_mouseX;
             int32_t m_mouseY;
             int32_t m_mouseButton;
+    std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
 
             /**
              * This method initializes the GLUT subsystem.

@@ -21,10 +21,13 @@
 #define IRUS_H_
 
 #include "MonitorAdaptation.h"
+#include "Voice.h"
 
 #include "opendavinci/odcore/opendavinci.h"
 #include "opendavinci/odcore/base/module/TimeTriggeredConferenceClientModule.h"
 #include "opendavinci/generated/odcore/data/dmcp/ModuleExitCodeMessage.h"
+#include "opendlv/data/environment/EgoState.h"
+#include "opendavinci/odcore/data/Container.h"
 
 namespace irus {
 
@@ -55,6 +58,12 @@ namespace irus {
              */
             IRUS& operator=(const IRUS &/*obj*/);
 
+    double GetMeasurementFromV2v(Voice const &,
+            opendlv::data::environment::EgoState const &,
+            uint32_t const &);
+    std::map<string, bool> m_areSensorAlternatives;
+    std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
+
         public:
             /**
              * Constructor.
@@ -72,6 +81,7 @@ namespace irus {
             virtual void setUp();
 
             virtual void tearDown();
+    virtual void nextContainer(odcore::data::Container &c);
     };
 
 } // irus

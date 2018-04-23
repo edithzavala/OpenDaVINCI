@@ -46,7 +46,7 @@ using namespace automotive::miniature;
 LaneFollower::LaneFollower(const int32_t &argc, char **argv) :
         TimeTriggeredConferenceClientModule(argc, argv, "lanefollower"), m_hasAttachedToSharedImageMemory(
                 false), m_sharedImageMemory(), m_image(NULL), m_debug(false), m_font(), m_previousTime(), m_eSum(
-                0), m_eOld(0), m_vehicleControl() {
+                0), m_eOld(0), m_vehicleControl(), m_KeyValueAdhocDataStore() {
 }
 
 LaneFollower::~LaneFollower() {
@@ -256,8 +256,15 @@ void LaneFollower::processImage() {
           << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
 
   // Go forward.
-  m_vehicleControl.setSpeed(2);
+  m_vehicleControl.setSpeed(1);
   m_vehicleControl.setSteeringWheelAngle(desiredSteering);
+}
+
+void LaneFollower::nextContainer(Container &c) {
+  if (c.getSenderStamp() == getIdentifier()) {
+    // Store data using a plain map.
+    m_KeyValueAdhocDataStore[c.getDataType()] = c;
+  }
 }
 
 // This method will do the main data processing job.
@@ -322,11 +329,11 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
     bool has_next_frame = false;
 
     // Get the most recent available container for a SharedImage.
-    Container c = getKeyValueDataStore().get(
-            odcore::data::image::SharedImage::ID());
+    Container c =
+            m_KeyValueAdhocDataStore[odcore::data::image::SharedImage::ID()];
 
     if (c.getSenderStamp() == getIdentifier()) {
-
+      std::cout << "My vehicle " << c.getSenderStamp() << endl;
       if (c.getDataType() == odcore::data::image::SharedImage::ID()) {
         // Example for processing the received container.
         has_next_frame = readSharedImage(c);
@@ -340,13 +347,13 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
       // Overtaking part.
       {
         // 1. Get most recent vehicle data:
-        Container containerVehicleData = getKeyValueDataStore().get(
-                automotive::VehicleData::ID());
+        Container containerVehicleData =
+                m_KeyValueAdhocDataStore[automotive::VehicleData::ID()];
         VehicleData vd = containerVehicleData.getData<VehicleData>();
 
         // 2. Get most recent sensor board data:
-        Container containerSensorBoardData = getKeyValueDataStore().get(
-                automotive::miniature::SensorBoardData::ID());
+        Container containerSensorBoardData =
+                m_KeyValueAdhocDataStore[automotive::miniature::SensorBoardData::ID()];
         SensorBoardData sbd =
                 containerSensorBoardData.getData<SensorBoardData>();
 
