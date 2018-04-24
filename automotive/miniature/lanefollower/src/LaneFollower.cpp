@@ -70,6 +70,12 @@ void LaneFollower::tearDown() {
     cvReleaseImage(&m_image);
   }
 
+  //Leave the vehicle in a safe stay
+  m_vehicleControl.setSpeed(0);
+  Container cLastControl(m_vehicleControl);
+  getConference().send(cLastControl);
+  /***/
+
   if (m_debug) {
     char name[3] = { 'w', getKeyValueConfiguration().getValue<char>(
             "lanefollower.camera_id"), '\0' };
@@ -252,8 +258,8 @@ void LaneFollower::processImage() {
       desiredSteering = -25.0;
     }
   }
-  cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum
-          << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
+//  cerr << "PID: " << "e = " << e << ", eSum = " << m_eSum
+//          << ", desiredSteering = " << desiredSteering << ", y = " << y << endl;
 
   // Go forward.
   m_vehicleControl.setSpeed(1);
@@ -295,6 +301,7 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
 
   // Overall state machines for moving and measuring.
   enum StateMachineMoving {
+    STOP,
     FORWARD,
     TO_LEFT_LANE_LEFT_TURN,
     TO_LEFT_LANE_RIGHT_TURN,
@@ -326,18 +333,20 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
   // Overall state machine handler.
   while (getModuleStateAndWaitForRemainingTimeInTimeslice()
           == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
+
     bool has_next_frame = false;
 
     // Get the most recent available container for a SharedImage.
     Container c =
             m_KeyValueAdhocDataStore[odcore::data::image::SharedImage::ID()];
+//    if (c.getSenderStamp() == getIdentifier()) {
+//      std::cout << "My vehicle " << c.getSenderStamp() << endl;
 
-    if (c.getSenderStamp() == getIdentifier()) {
-      std::cout << "My vehicle " << c.getSenderStamp() << endl;
       if (c.getDataType() == odcore::data::image::SharedImage::ID()) {
         // Example for processing the received container.
         has_next_frame = readSharedImage(c);
-      }
+      m_KeyValueAdhocDataStore.erase(odcore::data::image::SharedImage::ID());
+
 
       // Process the read image and calculate regular lane following set values for control algorithm.
       if (true == has_next_frame) {
@@ -349,13 +358,21 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
         // 1. Get most recent vehicle data:
         Container containerVehicleData =
                 m_KeyValueAdhocDataStore[automotive::VehicleData::ID()];
+      if (containerVehicleData.getDataType() == automotive::VehicleData::ID()) {
         VehicleData vd = containerVehicleData.getData<VehicleData>();
+        m_KeyValueAdhocDataStore.erase(automotive::VehicleData::ID());
 
         // 2. Get most recent sensor board data:
         Container containerSensorBoardData =
                 m_KeyValueAdhocDataStore[automotive::miniature::SensorBoardData::ID()];
+        if (containerSensorBoardData.getDataType()
+                == automotive::miniature::SensorBoardData::ID()) {
         SensorBoardData sbd =
                 containerSensorBoardData.getData<SensorBoardData>();
+          m_KeyValueAdhocDataStore.erase(
+                  automotive::miniature::SensorBoardData::ID());
+
+          /* RECEIVE DENM MESSAGE ABOUT CRASH AND CHANGE StageMoving to STOP*/
 
         // Moving state machine.
         if (stageMoving == FORWARD) {
@@ -415,6 +432,8 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
             m_eSum = 0;
             m_eOld = 0;
           }
+          } else if (stageMoving == STOP) {
+            m_vehicleControl.setSpeed(0);
         }
 
         // Measuring state machine.
@@ -484,12 +503,20 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
             stageMeasuring = DISABLE;
           }
         }
-      }
+          }
+        }
+      } // function
+    }
+    cerr << "Send control: acc - "
+            << std::to_string(m_vehicleControl.getAcceleration())
+            << ", speed - " << std::to_string(m_vehicleControl.getSpeed())
+            << ", sw - "
+            << std::to_string(m_vehicleControl.getSteeringWheelAngle()) << endl;
       // Create container for finally sending the set values for the control algorithm.
       Container c2(m_vehicleControl);
       // Send container.
       getConference().send(c2);
-    }
+
   }
 
   return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;

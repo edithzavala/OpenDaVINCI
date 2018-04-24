@@ -52,6 +52,7 @@ namespace vehicle {
              * @return Reference to this instance.
              */
             Vehicle& operator=(const Vehicle &/*obj*/);
+    std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
 
         public:
             /**
@@ -70,6 +71,7 @@ namespace vehicle {
             virtual void setUp();
 
             virtual void tearDown();
+    virtual void nextContainer(odcore::data::Container &c);
     };
 
 } // vehicle

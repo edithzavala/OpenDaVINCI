@@ -163,13 +163,13 @@ void CamGen::nextContainer(Container &c) {
 
   Container container =
           m_KeyValueAdhocDataStore[opendlv::data::environment::EgoState::ID()];
+//  std::cout << container.getSenderStamp() << std::endl;
+  if (container.getDataType() == opendlv::data::environment::EgoState::ID()) {
 
-  std::cout << container.getSenderStamp() << std::endl;
+    m_egoState = container.getData<opendlv::data::environment::EgoState>();
+    m_KeyValueAdhocDataStore.erase(opendlv::data::environment::EgoState::ID());
 
-  if (container.getSenderStamp() == getIdentifier()) {
-        m_egoState = container.getData<opendlv::data::environment::EgoState>();
-
-        m_image = m_grabber->getNextImage();
+    m_image = m_grabber->getNextImage();
 
         frameCounter++;
 
@@ -187,9 +187,10 @@ void CamGen::nextContainer(Container &c) {
                               "odsimcamera.id"));
       si.setName(name);
 
-      std::cout << name << std::endl;
+//      std::cout << name << std::endl;
 
             Container c(si);
+      c.setSenderStamp(getIdentifier());
             getConference().send(c);
         }
 

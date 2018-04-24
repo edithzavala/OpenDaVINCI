@@ -63,6 +63,7 @@ namespace irus {
             uint32_t const &);
     std::map<string, bool> m_areSensorAlternatives;
     std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
+    uint32_t m_minFaultyIterations;
 
         public:
             /**

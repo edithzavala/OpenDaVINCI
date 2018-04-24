@@ -43,7 +43,8 @@ namespace irus {
     using namespace opendlv::data::environment;
 
     IRUS::IRUS(const int32_t &argc, char **argv) :
-        TimeTriggeredConferenceClientModule(argc, argv, "odsimirus"), m_areSensorAlternatives(), m_KeyValueAdhocDataStore() {
+        TimeTriggeredConferenceClientModule(argc, argv, "odsimirus"), m_areSensorAlternatives(), m_KeyValueAdhocDataStore(), m_minFaultyIterations(
+                200) {
 }
 
     IRUS::~IRUS() {}
@@ -89,6 +90,7 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
 
   std::cout << config << std::endl;
   string lastAdaptedMonitor;
+  uint32_t acummFaultyIterations = 0;
 
   m_areSensorAlternatives["FrontRight"] = false;
   m_areSensorAlternatives["Rear"] = false;
@@ -99,8 +101,13 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
         while (getModuleStateAndWaitForRemainingTimeInTimeslice()
           == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
 
+    /*Process adaptation messages if exists*/
     Container c2 = m_KeyValueAdhocDataStore[MonitorAdaptation::ID()];
+
+    if (c2.getDataType() == MonitorAdaptation::ID()) {
     MonitorAdaptation ma = c2.getData<MonitorAdaptation>();
+      m_KeyValueAdhocDataStore.erase(MonitorAdaptation::ID());
+
     if ((unsigned) ma.getVehicleId() == getIdentifier()) {
       if (lastAdaptedMonitor.compare(ma.getMonitorName()) != 0) {
         lastAdaptedMonitor = ma.getMonitorName();
@@ -121,18 +128,19 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
         }
       }
     }
+    }
+
+    /**/
 
     // Get current EgoState.
     Container c =
             m_KeyValueAdhocDataStore[opendlv::data::environment::EgoState::ID()];
-    std::cout << "Vehicle egostate timeStamp: "
-            << std::to_string(c.getReceivedTimeStamp().toMicroseconds())
-            << std::endl;
 
-    if (c.getSenderStamp() == getIdentifier()) {
+    if (c.getDataType() == opendlv::data::environment::EgoState::ID()) {
 
       EgoState es = c.getData<EgoState>();
-
+      m_KeyValueAdhocDataStore.erase(
+              opendlv::data::environment::EgoState::ID());
       // Calculate result and propagate it.
       vector<Container> toBeSent = irus.calculate(es);
       if (toBeSent.size() > 0) {
@@ -157,7 +165,7 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
                 faultModelSkip = getKeyValueConfiguration().getValue<double>(
                         faultModelSkipStr.str());
                 if (faultModelSkip > 0) {
-                  // if( iterations to wait are reached!) {}else{sbd.putTo_MapOfDistances(i, -1)}
+                  if (acummFaultyIterations > m_minFaultyIterations) {
                   string name;
                   name = getKeyValueConfiguration().getValue<string>(
                           "odsimirus.sensor" + std::to_string(i) + ".name");
@@ -167,13 +175,15 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
                             << "-------------------: " << lastAdaptedMonitor
                             << std::endl;
 
-
+                    // Get data from vehicles around if exists
                     Container c2Voice = m_KeyValueAdhocDataStore[Voice::ID()];
                     std::cout << "Try to get last data using v2v " << std::endl;
+
                     if (c2Voice.getDataType() == Voice::ID()) {
                       std::cout << "Vehicle " << c2Voice.getSenderStamp()
                               << " answered" << std::endl;
                       Voice voice = c2Voice.getData<Voice>();
+//                      m_KeyValueAdhocDataStore.erase(Voice::ID());
                       sbd.putTo_MapOfDistances(i,
                               GetMeasurementFromV2v(voice, es, i));
                     } else {
@@ -183,6 +193,9 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
 
                   } else {
                     sbd.putTo_MapOfDistances(i, -2);
+                  }
+                  } else {
+                    acummFaultyIterations++;
                   }
                 }
 //                        else {
@@ -234,7 +247,10 @@ double IRUS::GetMeasurementFromV2v(Voice const &voice, EgoState const &ego,
 
   if (sensorKey == 1) {
     double distance = std::sqrt((xOffset * xOffset) + (yOffset * yOffset));
+    std::cout << "Distance to other vehicle : " << std::to_string(distance)
+            << std::endl;
     if (distance > 39) {
+      std::cout << "Vehicles around are far" << std::endl;
       return -1;
     } else {
       return distance;

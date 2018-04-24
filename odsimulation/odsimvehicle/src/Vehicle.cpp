@@ -39,13 +39,21 @@ namespace vehicle {
     using namespace odcore::data;
 
     Vehicle::Vehicle(const int32_t &argc, char **argv) :
-        TimeTriggeredConferenceClientModule(argc, argv, "odsimvehicle") {}
+        TimeTriggeredConferenceClientModule(argc, argv, "odsimvehicle"), m_KeyValueAdhocDataStore() {
+}
 
     Vehicle::~Vehicle() {}
 
     void Vehicle::setUp() {}
 
     void Vehicle::tearDown() {}
+
+void Vehicle::nextContainer(Container &c) {
+  if (c.getSenderStamp() == getIdentifier()) {
+    // Store data using a plain map.
+    m_KeyValueAdhocDataStore[c.getDataType()] = c;
+  }
+}
 
     odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode Vehicle::body() {
         stringstream sstrConfiguration;
@@ -57,27 +65,29 @@ namespace vehicle {
         simplifiedBicycleModel.setup();
 
         // Use the most recent EgoState available.
-        KeyValueDataStore &kvs = getKeyValueDataStore();
+//        KeyValueDataStore &kvs = getKeyValueDataStore();
 
         TimeStamp previousTime;
 
         while (getModuleStateAndWaitForRemainingTimeInTimeslice() == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
             // Get current VehicleControl.
-    Container c = kvs.get(automotive::VehicleControl::ID());
+//    Container c = kvs.get(automotive::VehicleControl::ID());
+    Container c = m_KeyValueAdhocDataStore[automotive::VehicleControl::ID()];
     automotive::VehicleControl vc;
-    if (c.getSenderStamp() == getIdentifier()) {
+
+    if (c.getDataType() == automotive::VehicleControl::ID()) {
       vc = c.getData<automotive::VehicleControl>();
+      std::cout << "Receive control from  " << c.getSenderStamp()
+              << " control: "
+              << vc.getSpeed() << endl;
+      m_KeyValueAdhocDataStore.erase(automotive::VehicleControl::ID());
     }
-//    std::cout << "Vehicle control id: " << c.getSenderStamp() << std::endl;
-//
-//    std::cout << "Vehicle data " << std::to_string(vc.getAcceleration())
-//            << std::endl;
 
     TimeStamp currentTime;
     const double timeStep = (currentTime.toMicroseconds()
             - previousTime.toMicroseconds()) / (1000.0 * 1000.0);
 
-    // Calculate result and propagate it.
+    // Calculate result and propagate it. If no new vehicle control is available, the model will help to load the position.
     vector<Container> toBeSent = simplifiedBicycleModel.calculate(vc, timeStep);
     if (toBeSent.size() > 0) {
       vector<Container>::iterator it = toBeSent.begin();
