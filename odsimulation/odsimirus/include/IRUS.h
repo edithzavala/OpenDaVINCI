@@ -62,8 +62,11 @@ namespace irus {
             opendlv::data::environment::EgoState const &,
             uint32_t const &);
     std::map<string, bool> m_areSensorAlternatives;
+    std::map<string, bool> m_areSensorsActive;
     std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
     uint32_t m_minFaultyIterations;
+    string m_lastAdaptedMonitorAdded;
+    string m_lastAdaptedMonitorRemoved;
 
         public:
             /**

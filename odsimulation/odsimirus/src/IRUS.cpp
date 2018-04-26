@@ -43,8 +43,8 @@ namespace irus {
     using namespace opendlv::data::environment;
 
     IRUS::IRUS(const int32_t &argc, char **argv) :
-        TimeTriggeredConferenceClientModule(argc, argv, "odsimirus"), m_areSensorAlternatives(), m_KeyValueAdhocDataStore(), m_minFaultyIterations(
-                200) {
+        TimeTriggeredConferenceClientModule(argc, argv, "odsimirus"), m_areSensorAlternatives(), m_areSensorsActive(), m_KeyValueAdhocDataStore(), m_minFaultyIterations(
+                200), m_lastAdaptedMonitorAdded(), m_lastAdaptedMonitorRemoved() {
 }
 
     IRUS::~IRUS() {}
@@ -66,14 +66,71 @@ void IRUS::tearDown() {
 }
 
 void IRUS::nextContainer(Container &c) {
-  if (c.getSenderStamp() == getIdentifier()
-          || c.getDataType() == MonitorAdaptation::ID()
-          || c.getDataType() == Voice::ID()) {
+  if (c.getSenderStamp() == getIdentifier() || c.getDataType() == Voice::ID()) {
     // Store data using a plain map.
     m_KeyValueAdhocDataStore[c.getDataType()] = c;
+  } else if (c.getDataType() == MonitorAdaptation::ID()) {
+    /*Process adaptation messages if exists*/
+    MonitorAdaptation ma = c.getData<MonitorAdaptation>();
+    //Check if adaptation is for me
+    if ((unsigned) ma.getVehicleId() == getIdentifier()) {
+      //Check adaptation is valid
+        if (ma.getMonitorName().compare("") != 0) {
+        //Store sensor prefix
+        string monitorPrefix = ma.getMonitorName().substr(0,
+                ma.getMonitorName().find("_"));
+        //Add/remove sensor
+        if (ma.getAction() == "add"
+                  && (ma.getMonitorName().compare(m_lastAdaptedMonitorAdded)
+                          != 0)) {
+
+          if (monitorPrefix == "V2V") {
+            m_lastAdaptedMonitorAdded = ma.getMonitorName();
+            //Add monitor as alternative
+            m_areSensorAlternatives[m_lastAdaptedMonitorAdded.substr(
+                    m_lastAdaptedMonitorAdded.find("_") + 1, std::string::npos)] =
+                    true;
+            //Request V2V
+            std::string request("1");
+        V2vRequest nextMessage(request.size(), request);
+        odcore::data::Container cReq(nextMessage);
+        getConference().send(cReq);
+          } else if (monitorPrefix == "Infrared"
+                  || monitorPrefix == "UltraSonic") {
+            m_lastAdaptedMonitorAdded = ma.getMonitorName();
+            //Set sensor state active
+            m_areSensorsActive[m_lastAdaptedMonitorAdded] = true;
+          }
+
+          } else if (ma.getAction() == "remove"
+                  && (ma.getMonitorName().compare(m_lastAdaptedMonitorRemoved)
+                        != 0)) {
+
+          if (monitorPrefix == "V2V") {
+            m_lastAdaptedMonitorRemoved = ma.getMonitorName();
+            //Add monitor as alternative
+            m_areSensorAlternatives[m_lastAdaptedMonitorRemoved.substr(
+                    m_lastAdaptedMonitorRemoved.find("_") + 1,
+                    std::string::npos)] = false;
+            //Stop V2V
+            std::string request("0");
+          V2vRequest nextMessage(request.size(), request);
+          odcore::data::Container cReq(nextMessage);
+          getConference().send(cReq);
+          } else if (monitorPrefix == "Infrared"
+                  || monitorPrefix == "UltraSonic") {
+            m_lastAdaptedMonitorRemoved = ma.getMonitorName();
+            //Set sensor state active
+            m_areSensorsActive[m_lastAdaptedMonitorRemoved] = false;
+          }
+
+        }
+
+      }
+    }
+    /**/
   }
 }
-
 
 odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
   stringstream sstrConfiguration;
@@ -89,7 +146,6 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
 //  KeyValueDataStore &kvs = getKeyValueDataStore();
 
   std::cout << config << std::endl;
-  string lastAdaptedMonitor;
   uint32_t acummFaultyIterations = 0;
 
   m_areSensorAlternatives["FrontRight"] = false;
@@ -97,40 +153,15 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
   m_areSensorAlternatives["RearRight"] = false;
   m_areSensorAlternatives["FrontCenter"] = false;
 
+  m_areSensorsActive["Infrared_FrontRight"] = true;
+  m_areSensorsActive["Infrared_Rear"] = true;
+  m_areSensorsActive["Infrared_RearRight"] = true;
+  m_areSensorsActive["UltraSonic_FrontCenter"] = true;
+  m_areSensorsActive["UltraSonic_FrontRight"] = true;
+  m_areSensorsActive["UltraSonic_RearRight"] = true;
 
-        while (getModuleStateAndWaitForRemainingTimeInTimeslice()
+  while (getModuleStateAndWaitForRemainingTimeInTimeslice()
           == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
-
-    /*Process adaptation messages if exists*/
-    Container c2 = m_KeyValueAdhocDataStore[MonitorAdaptation::ID()];
-
-    if (c2.getDataType() == MonitorAdaptation::ID()) {
-    MonitorAdaptation ma = c2.getData<MonitorAdaptation>();
-      m_KeyValueAdhocDataStore.erase(MonitorAdaptation::ID());
-
-    if ((unsigned) ma.getVehicleId() == getIdentifier()) {
-      if (lastAdaptedMonitor.compare(ma.getMonitorName()) != 0) {
-        lastAdaptedMonitor = ma.getMonitorName();
-        if (ma.getAction() == "add") {
-          m_areSensorAlternatives[lastAdaptedMonitor.substr(
-                  lastAdaptedMonitor.find("_") + 1, std::string::npos)] = true;
-        std::string request("1");
-        V2vRequest nextMessage(request.size(), request);
-        odcore::data::Container cReq(nextMessage);
-        getConference().send(cReq);
-        } else { // in case of remove
-          m_areSensorAlternatives[lastAdaptedMonitor.substr(
-                  lastAdaptedMonitor.find("_") + 1, std::string::npos)] = false;
-          std::string request("0");
-          V2vRequest nextMessage(request.size(), request);
-          odcore::data::Container cReq(nextMessage);
-          getConference().send(cReq);
-        }
-      }
-    }
-    }
-
-    /**/
 
     // Get current EgoState.
     Container c =
@@ -156,7 +187,19 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
 
             int numSensors = getKeyValueConfiguration().getValue<double>(
                     "odsimirus.numberOfSensors");
+
             for (int i = 0; i < numSensors; i++) {
+
+              std::string sensorNameStr(
+                      "odsimirus.sensor" + std::to_string(i) + ".name");
+
+              std::string sensorName(
+                      getKeyValueConfiguration().getValue<string>(
+                              sensorNameStr));
+
+              if (!m_areSensorsActive.at(sensorName)) {
+                sbd.putTo_MapOfDistances(i, -1);
+              } else {
               double faultModelSkip = 0;
               try {
                 stringstream faultModelSkipStr;
@@ -166,34 +209,47 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
                         faultModelSkipStr.str());
                 if (faultModelSkip > 0) {
                   if (acummFaultyIterations > m_minFaultyIterations) {
-                  string name;
-                  name = getKeyValueConfiguration().getValue<string>(
-                          "odsimirus.sensor" + std::to_string(i) + ".name");
-                  if (m_areSensorAlternatives.at(
-                          name.substr(name.find("_") + 1, std::string::npos))) {
-                    std::cout << "There is an alternative for " << name
-                            << "-------------------: " << lastAdaptedMonitor
-                            << std::endl;
 
-                    // Get data from vehicles around if exists
-                    Container c2Voice = m_KeyValueAdhocDataStore[Voice::ID()];
-                    std::cout << "Try to get last data using v2v " << std::endl;
-
-                    if (c2Voice.getDataType() == Voice::ID()) {
-                      std::cout << "Vehicle " << c2Voice.getSenderStamp()
-                              << " answered" << std::endl;
-                      Voice voice = c2Voice.getData<Voice>();
-//                      m_KeyValueAdhocDataStore.erase(Voice::ID());
-                      sbd.putTo_MapOfDistances(i,
-                              GetMeasurementFromV2v(voice, es, i));
+                    if (acummFaultyIterations > (m_minFaultyIterations * 3)) {
+                      sbd.putTo_MapOfDistances(i, -1);
                     } else {
-                      std::cout << "No vehicles around" << std::endl;
                       sbd.putTo_MapOfDistances(i, -2);
                     }
 
-                  } else {
-                    sbd.putTo_MapOfDistances(i, -2);
-                  }
+                    string name;
+                    name = getKeyValueConfiguration().getValue<string>(
+                            "odsimirus.sensor" + std::to_string(i) + ".name");
+                    if (m_areSensorAlternatives.at(
+                            name.substr(name.find("_") + 1,
+                                    std::string::npos))) {
+                      std::cout << "There is an alternative for " << name
+                              << "-------------------: "
+                              << m_lastAdaptedMonitorAdded
+                              << std::endl;
+
+                      // Get data from vehicles around if exists
+                      Container c2Voice = m_KeyValueAdhocDataStore[Voice::ID()];
+                      std::cout << "Try to get last data using v2v "
+                              << std::endl;
+
+                      if (c2Voice.getDataType() == Voice::ID()) {
+                        std::cout << "Vehicle " << c2Voice.getSenderStamp()
+                                << " answered" << std::endl;
+                        Voice voice = c2Voice.getData<Voice>();
+                        //                      m_KeyValueAdhocDataStore.erase(Voice::ID());
+                        sbd.putTo_MapOfDistances(6,
+                                GetMeasurementFromV2v(voice, es, i));
+
+                      } else {
+                        std::cout << "No vehicles around" << std::endl;
+//                        sbd.putTo_MapOfDistances(i, -2);
+                      }
+
+                    }
+//                    else {
+//                      sbd.putTo_MapOfDistances(i, -2);
+//                    }
+                    acummFaultyIterations++;
                   } else {
                     acummFaultyIterations++;
                   }
@@ -204,8 +260,8 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode IRUS::body() {
               } catch (const odcore::exceptions::ValueForKeyNotFoundException &e) {
               }
 //              std::cout << sbd.getValueForKey_MapOfDistances(i) << std::endl;
+              }
             }
-
             Container data = Container(sbd);
             getConference().send(data);
           } else {

@@ -62,4 +62,26 @@ services:
         network_mode: host
         ipc: host
         command: "/opt/odsimulation/odcockpit --cid=111"
+
+ # microservice for knowledge-v2vcam
+    knowledge-v2vcam0:
+        build: .
+        working_dir: /opt/opendlv.data/
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/opendlv.data
+        network_mode: host
+        ipc: host
+        command: "/opt/opendlv/bin/opendlv-logic-knowledge-v2vcam --cid=111"
+
+ # microservice for knowledge-v2vcam
+    knowledge-v2vcam1:
+        build: .
+        working_dir: /opt/opendlv.data/
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix
+            - .:/opt/opendlv.data
+        network_mode: host
+        ipc: host
+        command: "/opt/opendlv/bin/opendlv-logic-knowledge-v2vcam --cid=111 --id=1"
  
