@@ -84,7 +84,7 @@ void IRUS::nextContainer(Container &c) {
                   && (ma.getMonitorName().compare(m_lastAdaptedMonitorAdded)
                           != 0)) {
 
-          if (monitorPrefix == "V2V") {
+          if (monitorPrefix == "V2VCam") {
             m_lastAdaptedMonitorAdded = ma.getMonitorName();
             //Add monitor as alternative
             m_areSensorAlternatives[m_lastAdaptedMonitorAdded.substr(
@@ -106,7 +106,7 @@ void IRUS::nextContainer(Container &c) {
                   && (ma.getMonitorName().compare(m_lastAdaptedMonitorRemoved)
                         != 0)) {
 
-          if (monitorPrefix == "V2V") {
+          if (monitorPrefix == "V2VCam") {
             m_lastAdaptedMonitorRemoved = ma.getMonitorName();
             //Add monitor as alternative
             m_areSensorAlternatives[m_lastAdaptedMonitorRemoved.substr(
@@ -301,7 +301,7 @@ double IRUS::GetMeasurementFromV2v(Voice const &voice, EgoState const &ego,
   double xOffset = ego.getPosition().getX() - longitude;
   double yOffset = ego.getPosition().getY() - latitude;
 
-  if (sensorKey == 1) {
+  if (sensorKey == 3 || sensorKey == 1) {
     double distance = std::sqrt((xOffset * xOffset) + (yOffset * yOffset));
     std::cout << "Distance to other vehicle : " << std::to_string(distance)
             << std::endl;

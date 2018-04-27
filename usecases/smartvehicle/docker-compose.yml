@@ -84,4 +84,3 @@ services:
         network_mode: host
         ipc: host
         command: "/opt/opendlv/bin/opendlv-logic-knowledge-v2vcam --cid=111 --id=1"
- 

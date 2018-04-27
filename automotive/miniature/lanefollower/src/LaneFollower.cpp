@@ -270,6 +270,9 @@ void LaneFollower::nextContainer(Container &c) {
   if (c.getSenderStamp() == getIdentifier()) {
     // Store data using a plain map.
     m_KeyValueAdhocDataStore[c.getDataType()] = c;
+
+    //ADD CASE FOR V3V DENM MESSAGE ABOUT ACCIDENT
+    // StateMachineMoving SHOULD BE MEMBER AND SET TO STOP IN THIS MODULE.
   }
 }
 
