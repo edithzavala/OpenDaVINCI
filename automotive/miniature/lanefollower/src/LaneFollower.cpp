@@ -32,6 +32,7 @@
 #include "opendavinci/GeneratedHeaders_OpenDaVINCI.h"
 
 #include "LaneFollower.h"
+#include "Voice.h"
 
 namespace automotive {
 namespace miniature {
@@ -46,7 +47,8 @@ using namespace automotive::miniature;
 LaneFollower::LaneFollower(const int32_t &argc, char **argv) :
         TimeTriggeredConferenceClientModule(argc, argv, "lanefollower"), m_hasAttachedToSharedImageMemory(
                 false), m_sharedImageMemory(), m_image(NULL), m_debug(false), m_font(), m_previousTime(), m_eSum(
-                0), m_eOld(0), m_vehicleControl(), m_KeyValueAdhocDataStore() {
+                0), m_eOld(0), m_vehicleControl(), m_KeyValueAdhocDataStore(), m_stop(
+                false) {
 }
 
 LaneFollower::~LaneFollower() {
@@ -273,6 +275,13 @@ void LaneFollower::nextContainer(Container &c) {
 
     //ADD CASE FOR V3V DENM MESSAGE ABOUT ACCIDENT
     // StateMachineMoving SHOULD BE MEMBER AND SET TO STOP IN THIS MODULE.
+  } else if (c.getDataType() == Voice::ID()) {
+    Voice voice = c.getData<Voice>();
+    if (voice.getType() == "denm") {
+      std::cout << "Process denm event message: ROAD ACCIDENT (CRASH)"
+              << std::endl;
+      m_stop = true;
+    }
   }
 }
 
@@ -337,6 +346,7 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
   while (getModuleStateAndWaitForRemainingTimeInTimeslice()
           == odcore::data::dmcp::ModuleStateMessage::RUNNING) {
 
+    if (!m_stop) {
     bool has_next_frame = false;
 
     // Get the most recent available container for a SharedImage.
@@ -435,7 +445,7 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
             m_eSum = 0;
             m_eOld = 0;
           }
-          } else if (stageMoving == STOP) {
+              } else if (stageMoving == STOP) { // not used, state machine is local
             m_vehicleControl.setSpeed(0);
         }
 
@@ -510,6 +520,11 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
         }
       } // function
     }
+    } else {
+      std::cout << "Safely stop vehicle" << std::endl;
+      return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;
+    }
+
     cerr << "Send control: acc - "
             << std::to_string(m_vehicleControl.getAcceleration())
             << ", speed - " << std::to_string(m_vehicleControl.getSpeed())

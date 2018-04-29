@@ -95,6 +95,7 @@ namespace automotive {
 
                 automotive::VehicleControl m_vehicleControl;
     std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
+    bool m_stop;
 
 	            virtual void setUp();
 
