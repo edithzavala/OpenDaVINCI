@@ -269,20 +269,22 @@ void LaneFollower::processImage() {
 }
 
 void LaneFollower::nextContainer(Container &c) {
-  if (c.getSenderStamp() == getIdentifier()) {
-    // Store data using a plain map.
-    m_KeyValueAdhocDataStore[c.getDataType()] = c;
-
-    //ADD CASE FOR V3V DENM MESSAGE ABOUT ACCIDENT
-    // StateMachineMoving SHOULD BE MEMBER AND SET TO STOP IN THIS MODULE.
-  } else if (c.getDataType() == Voice::ID()) {
+  if (c.getDataType() == Voice::ID()) {
     Voice voice = c.getData<Voice>();
     if (voice.getType() == "denm") {
+      if (c.getSenderStamp() == getIdentifier()) {
+        std::cout << "Witness ROAD ACCIDENT (CRASH)" << std::endl;
+      } else {
       std::cout << "Process denm event message: ROAD ACCIDENT (CRASH)"
               << std::endl;
+      }
       m_stop = true;
     }
+  } else if (c.getSenderStamp() == getIdentifier()) {
+    // Store data using a plain map.
+    m_KeyValueAdhocDataStore[c.getDataType()] = c;
   }
+
 }
 
 // This method will do the main data processing job.
