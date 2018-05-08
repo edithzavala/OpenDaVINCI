@@ -273,7 +273,7 @@ void LaneFollower::nextContainer(Container &c) {
     Voice voice = c.getData<Voice>();
     if (voice.getType() == "denm") {
       if (c.getSenderStamp() == getIdentifier()) {
-        std::cout << "Witness ROAD ACCIDENT (CRASH)" << std::endl;
+        std::cout << "Witness event: ROAD ACCIDENT (CRASH)" << std::endl;
       } else {
       std::cout << "Process denm event message: ROAD ACCIDENT (CRASH)"
               << std::endl;
