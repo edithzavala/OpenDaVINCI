@@ -67,6 +67,13 @@ void LaneFollower::setUp() {
 		cvNamedWindow(name, CV_WINDOW_AUTOSIZE);
 		cvMoveWindow(name, 300, 100);
 	}
+
+	//Send vehicle init signal
+	if (!m_isSimulation) {
+		m_vehicleControl.setSpeed(0);
+		Container cLastControl(m_vehicleControl);
+		getConference().send(cLastControl);
+	}
 }
 
 void LaneFollower::tearDown() {
@@ -75,12 +82,10 @@ void LaneFollower::tearDown() {
 		cvReleaseImage(&m_image);
 	}
 
-	//Leave the vehicle in a safe stay
-	if (m_isSimulation) {
-		m_vehicleControl.setSpeed(0);
-		Container cLastControl(m_vehicleControl);
-		getConference().send(cLastControl);
-	}
+	//Leave the vehicle in a safe stay or indicate change to manual mode
+	m_vehicleControl.setSpeed(0);
+	Container cLastControl(m_vehicleControl);
+	getConference().send(cLastControl);
 	/***/
 
 	std::cout << "Autonomous driving off. Manual driving on." << std::endl;
