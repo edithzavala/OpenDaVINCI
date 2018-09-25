@@ -11,18 +11,18 @@ services:
             - .:/opt/odsimulation
         network_mode: host
         ipc: host
-        command: "/opt/odsimulation/odsimvehicle --cid=111 --freq=10"
+        command: "/opt/odsimulation/odsimvehicle --cid=135 --freq=10"
 
- # microservice odsimvehicle
-    odsimvehicle1:
-        image: odsimvehicle
-        working_dir: /opt/odsimulation
-        volumes:
-            - /tmp/.X11-unix:/tmp/.X11-unix
-            - .:/opt/odsimulation
-        network_mode: host
-        ipc: host
-        command: "/opt/odsimulation/odsimvehicle --cid=111 --freq=10 --id=1"
+# # microservice odsimvehicle
+#    odsimvehicle1:
+#        image: odsimvehicle
+#        working_dir: /opt/odsimulation
+#        volumes:
+#            - /tmp/.X11-unix:/tmp/.X11-unix
+#            - .:/opt/odsimulation
+#        network_mode: host
+#        ipc: host
+#        command: "/opt/odsimulation/odsimvehicle --cid=135 --freq=10 --id=1"
 
  # microservice odsimirus
     odsimirus0:
@@ -35,20 +35,20 @@ services:
             - .:/opt/odsimulation
         network_mode: host
         ipc: host
-        command: "/opt/odsimulation/odsimirus --cid=111 --freq=10"
+        command: "/opt/odsimulation/odsimirus --cid=135 --freq=10"
 
- # microservice odsimirus
-    odsimirus1:
-        image: odsimirus
-        working_dir: /opt/odsimulation
-        depends_on:
-            - odsimvehicle1
-        volumes:
-            - /tmp/.X11-unix:/tmp/.X11-unix
-            - .:/opt/odsimulation
-        network_mode: host
-        ipc: host
-        command: "/opt/odsimulation/odsimirus --cid=111 --freq=10 --id=1"
+# # microservice odsimirus
+#    odsimirus1:
+#        image: odsimirus
+#        working_dir: /opt/odsimulation
+#        depends_on:
+#            - odsimvehicle1
+#        volumes:
+#            - /tmp/.X11-unix:/tmp/.X11-unix
+#            - .:/opt/odsimulation
+#        network_mode: host
+#        ipc: host
+#        command: "/opt/odsimulation/odsimirus --cid=135 --freq=10 --id=1"
 
  # microservice for odcockpit
     odcockpit:
@@ -61,26 +61,13 @@ services:
             - .:/opt/odsimulation
         network_mode: host
         ipc: host
-        command: "/opt/odsimulation/odcockpit --cid=111"
+        command: "/opt/odsimulation/odcockpit --cid=135"
 
- # microservice for knowledge-v2vcam
-    knowledge-v2vcam0:
-        build: .
-        working_dir: /opt/opendlv.data/
-        volumes:
-            - /tmp/.X11-unix:/tmp/.X11-unix
-            - .:/opt/opendlv.data
+#  microservice city data monitor
+    cityreporter:
+        image: cityreporter
+        depends_on:
+            - odsimvehicle0
         network_mode: host
-        ipc: host
-        command: "/opt/opendlv/bin/opendlv-logic-knowledge-v2vcam --cid=111"
-
- # microservice for knowledge-v2vcam
-    knowledge-v2vcam1:
-        build: .
-        working_dir: /opt/opendlv.data/
-        volumes:
-            - /tmp/.X11-unix:/tmp/.X11-unix
-            - .:/opt/opendlv.data
-        network_mode: host
-        ipc: host
-        command: "/opt/opendlv/bin/opendlv-logic-knowledge-v2vcam --cid=111 --id=1"
+   #     volumes: // use for replay
+   #     - /weka_ksam/:/tmp/weka

@@ -87,6 +87,7 @@ namespace automotive {
 	            std::shared_ptr<odcore::wrapper::SharedMemory> m_sharedImageMemory;
 	            IplImage *m_image;
                 bool m_debug;
+	bool m_isSimulation;
                 CvFont m_font;
 
                 odcore::data::TimeStamp m_previousTime;
