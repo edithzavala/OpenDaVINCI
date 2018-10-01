@@ -33,6 +33,7 @@
 
 #include "LaneFollower.h"
 #include "Voice.h"
+#include "TrafficData.h"
 
 namespace automotive {
 namespace miniature {
@@ -48,7 +49,7 @@ LaneFollower::LaneFollower(const int32_t &argc, char **argv) :
 		TimeTriggeredConferenceClientModule(argc, argv, "lanefollower"), m_hasAttachedToSharedImageMemory(
 				false), m_sharedImageMemory(), m_image(NULL), m_debug(false), m_isSimulation(
 				false), m_font(), m_previousTime(), m_eSum(0), m_eOld(0), m_vehicleControl(), m_KeyValueAdhocDataStore(), m_stop(
-				false) {
+				false), m_trafficFactor(0), m_v2vConfigtf(0) {
 }
 
 LaneFollower::~LaneFollower() {
@@ -61,6 +62,9 @@ void LaneFollower::setUp() {
 			"lanefollower.camera_id"), '\0' };
 	m_isSimulation = getKeyValueConfiguration().getValue<bool>(
 			"lanefollower.simulation");
+
+	m_v2vConfigtf = getKeyValueConfiguration().getValue<double>(
+			"lanefollower.tf");
 
 	if (m_debug && m_isSimulation) {
 		// Create an OpenCV-window.
@@ -297,7 +301,14 @@ void LaneFollower::nextContainer(Container &c) {
 				std::cout << "New route selected: Route_S" << std::endl;
 			}
 			m_stop = true;
+		} else {
+			std::cout << "Receive cam message" << std::endl;
+			m_trafficFactor = m_v2vConfigtf;
 		}
+	} else if (c.getDataType() == TrafficData::ID()) {
+		TrafficData tData = c.getData<TrafficData>();
+		m_trafficFactor = tData.getTrafficFactor();
+		std::cout << "Receive cityreporter message" << std::endl;
 	} else if (c.getSenderStamp() == getIdentifier() && m_isSimulation) {
 		// Store data using a plain map.
 		m_KeyValueAdhocDataStore[c.getDataType()] = c;
@@ -586,6 +597,11 @@ odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode LaneFollower::body() {
 		// Overall state machine handler.
 		while (getModuleStateAndWaitForRemainingTimeInTimeslice()
 				== odcore::data::dmcp::ModuleStateMessage::RUNNING) {
+			if (m_trafficFactor < 5) {
+				std::cout << "Autonomous driving: Route 1 " << std::endl;
+			} else {
+				std::cout << "Autonomous driving: Route 2 " << std::endl;
+			}
 		}
 	}
 	return odcore::data::dmcp::ModuleExitCodeMessage::OKAY;

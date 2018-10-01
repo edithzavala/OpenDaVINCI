@@ -31,81 +31,82 @@
 #include "opendavinci/GeneratedHeaders_OpenDaVINCI.h"
 
 namespace automotive {
-    namespace miniature {
+namespace miniature {
 
-        using namespace std;
+using namespace std;
 
-        /**
-         * This class is an exemplary skeleton for processing video data.
-         */
-        class LaneFollower: public odcore::base::module::TimeTriggeredConferenceClientModule {
-            private:
-	            /**
-	             * "Forbidden" copy constructor. Goal: The compiler should warn
-	             * already at compile time for unwanted bugs caused by any misuse
-	             * of the copy constructor.
-	             *
-	             * @param obj Reference to an object of this class.
-	             */
-	            LaneFollower(const LaneFollower &/*obj*/);
+/**
+ * This class is an exemplary skeleton for processing video data.
+ */
+class LaneFollower: public odcore::base::module::TimeTriggeredConferenceClientModule {
+private:
+	/**
+	 * "Forbidden" copy constructor. Goal: The compiler should warn
+	 * already at compile time for unwanted bugs caused by any misuse
+	 * of the copy constructor.
+	 *
+	 * @param obj Reference to an object of this class.
+	 */
+	LaneFollower(const LaneFollower &/*obj*/);
 
-	            /**
-	             * "Forbidden" assignment operator. Goal: The compiler should warn
-	             * already at compile time for unwanted bugs caused by any misuse
-	             * of the assignment operator.
-	             *
-	             * @param obj Reference to an object of this class.
-	             * @return Reference to this instance.
-	             */
-	            LaneFollower& operator=(const LaneFollower &/*obj*/);
+	/**
+	 * "Forbidden" assignment operator. Goal: The compiler should warn
+	 * already at compile time for unwanted bugs caused by any misuse
+	 * of the assignment operator.
+	 *
+	 * @param obj Reference to an object of this class.
+	 * @return Reference to this instance.
+	 */
+	LaneFollower& operator=(const LaneFollower &/*obj*/);
 
-            public:
-	            /**
-	             * Constructor.
-	             *
-	             * @param argc Number of command line arguments.
-	             * @param argv Command line arguments.
-	             */
-	            LaneFollower(const int32_t &argc, char **argv);
+public:
+	/**
+	 * Constructor.
+	 *
+	 * @param argc Number of command line arguments.
+	 * @param argv Command line arguments.
+	 */
+	LaneFollower(const int32_t &argc, char **argv);
 
-	            virtual ~LaneFollower();
-    virtual void nextContainer(odcore::data::Container &c);
+	virtual ~LaneFollower();
+	virtual void nextContainer(odcore::data::Container &c);
 
-	            odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode body();
+	odcore::data::dmcp::ModuleExitCodeMessage::ModuleExitCode body();
 
-            protected:
-	            /**
-	             * This method is called to process an incoming container.
-	             *
-	             * @param c Container to process.
-	             * @return true if c was successfully processed.
-	             */
-	            bool readSharedImage(odcore::data::Container &c);
+protected:
+	/**
+	 * This method is called to process an incoming container.
+	 *
+	 * @param c Container to process.
+	 * @return true if c was successfully processed.
+	 */
+	bool readSharedImage(odcore::data::Container &c);
 
-            private:
-	            bool m_hasAttachedToSharedImageMemory;
-	            std::shared_ptr<odcore::wrapper::SharedMemory> m_sharedImageMemory;
-	            IplImage *m_image;
-                bool m_debug;
+private:
+	bool m_hasAttachedToSharedImageMemory;
+	std::shared_ptr<odcore::wrapper::SharedMemory> m_sharedImageMemory;
+	IplImage *m_image;
+	bool m_debug;
 	bool m_isSimulation;
-                CvFont m_font;
+	CvFont m_font;
 
-                odcore::data::TimeStamp m_previousTime;
-                double m_eSum;
-                double m_eOld;
+	odcore::data::TimeStamp m_previousTime;
+	double m_eSum;
+	double m_eOld;
+	automotive::VehicleControl m_vehicleControl;
+	std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
+	bool m_stop;
+	double m_trafficFactor;
+	double m_v2vConfigtf;
 
-                automotive::VehicleControl m_vehicleControl;
-    std::map<uint32_t, odcore::data::Container> m_KeyValueAdhocDataStore;
-    bool m_stop;
+	virtual void setUp();
 
-	            virtual void setUp();
+	virtual void tearDown();
 
-	            virtual void tearDown();
+	void processImage();
+};
 
-                void processImage();
-        };
-
-    }
+}
 } // automotive::miniature
 
 #endif /*LANEFOLLOWER_H_*/
